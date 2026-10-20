@@ -1,2 +1,11 @@
-# nmd-computer-dashboard
-Private dashboard and auth system for NMD COMPUTER premium code generation
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #050816;
+  color: #fff;
+}
+
+* { box-sizing: border-box; }
+
+button, input { font: inherit; }

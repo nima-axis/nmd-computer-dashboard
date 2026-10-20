@@ -1,44 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
-import { z } from "zod";
-
-const schema = z.object({
-  email: z.string().email(),
-  code: z.string().min(4),
-  deviceId: z.string().min(1),
-});
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
-  const parsed = schema.safeParse(body);
+  const email = String(body?.email || "").trim();
 
-  if (!parsed.success) {
-    return NextResponse.json({ ok: false, message: "Invalid payload" }, { status: 400 });
+  if (!email) {
+    return NextResponse.json({ ok: false, message: "Email required" }, { status: 400 });
   }
 
-  const email = parsed.data.email.toLowerCase();
-  const { code, deviceId } = parsed.data;
-  const db = await getDb();
+  const adminNumber = process.env.ADMIN_WHATSAPP_NUMBER || "+94726800969";
+  const message = `Hello, I want a premium code for NMD COMPUTER. My email is ${email}. Please guide me after payment.`;
 
-  const user = await db.collection("users").findOne({ email });
-  if (!user) {
-    return NextResponse.json({ ok: false, message: "User not found" }, { status: 404 });
-  }
-
-  const premiumCode = await db.collection("premium_codes").findOne({ email, code, status: "active" });
-  if (!premiumCode) {
-    return NextResponse.json({ ok: false, message: "Premium code not valid for this email" }, { status: 403 });
-  }
-
-  await db.collection("premium_codes").updateOne(
-    { _id: premiumCode._id },
-    { $set: { status: "used", redeemedAt: new Date(), deviceId } }
-  );
-
-  await db.collection("users").updateOne(
-    { _id: user._id },
-    { $set: { premiumStatus: "active", premiumUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), lastPremiumActivation: new Date() } }
-  );
-
-  return NextResponse.json({ ok: true, message: "Premium activated" });
+  return NextResponse.json({
+    ok: true,
+    message,
+    target: adminNumber,
+    note: "This is the manual WhatsApp flow. The admin receives the WhatsApp request and manually checks the dashboard by email before generating a premium code.",
+  });
 }
